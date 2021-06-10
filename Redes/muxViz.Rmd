@@ -41,7 +41,7 @@ caso de las redes temporales. Mientras tanto, "categorical" indica que todas las
 capas están conectadas con todas.
 ```{r}
 lT <- BuildLayersTensor(Layers = layers, OmegaParameter = 1, 
-                  MultisliceType = "categorical")
+                  MultisliceType = "temporal")
 lT
 ```
 El comando BuildSupraAdjacencyMatrixFromEdgeColoredMatrices() tiene como input
@@ -75,7 +75,7 @@ matriz supradyacencia.
 
 ############
 ```{r}
-SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix = sam_lT, Layers = layers,
+SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix = sam, Layers = layers,
                             Nodes = nodes)
 ```
 
@@ -145,31 +145,87 @@ Hub es el modelo opuesto a la centralidad por autoridad, pues este se fundamenta
 GetMultiHubCentrality(SupraAdjacencyMatrix = sam, Layers = layers,
                       Nodes = nodes)
 ```
-Toma en cuenta el degree de los nodos de las capas, pero no las conexiones entre capas.
+Toma en cuenta el degree de los nodos de las capas, pero no las conexiones entre capas. Cuenta conexiones de entrada y salida, en redes no dirigidas son equivalentes.
 ```{r}
 GetMultiInDegree(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
                  isDirected = F)
+GetMultiOutDegree(SupraAdjacencyMatrix = sam, Layers = layers, Nodes =nodes,
+                  isDirected = F)
 ```
 Este incluye también las conexiones entre capas.
 ```{r}
-GetMultiInDegreeSum(SupraAdjacencyMatrix =sam, Layers = layers, Nodes = nodes, isDirected = F)
+GetMultiInDegreeSum(SupraAdjacencyMatrix =sam, Layers = layers, Nodes = nodes,
+                    isDirected = F)
+GetMultiOutDegreeSum(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
+                     isDirected = F)
 ```
 Este método se fundamenta en el degree, pero también toma en cuenta el peso de las conexiones, que en este caso valen todas 1, por lo cual es igual al valor de centralidad por degree.
 ```{r}
+#Conexiones de entrada y salida
+GetMultiStrength(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
+                 isDirected = F)
+#Concidera también las conexiones entre capas
+GetMultiStrengthSum(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
+                    isDirected = F)
+#Conexiones de entrada
 GetMultiInStrength(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
                    isDirected = F)
+#Conexiones de salida
+GetMultiOutStrength(SupraAdjacencyMatrix = sam, Layers = layers, Nodes = nodes,
+                    isDirected = F)
 ```
-En este caso, además del número de conexiones con sus respectivos pesos, se incluyen también las conexiones entre capas y sus pesos. Tanto este como el caso anterior son prácticos para redes pesadas.
+En este caso, además del número de conexiones con sus respectivos pesos, se incluyen también las conexiones entre capas y sus pesos. Tanto este como el caso anterior son prácticos para redes pesadas. El primero no toma en cuenta las conexiones entre capas.
 ```{r}
+GetMultiStrength(SupraAdjacencyMatrix = sam, Layers = layers, Nodes =nodes,
+                 isDirected = F)
 GetMultiInStrengthSum(SupraAdjacencyMatrix = sam, Layers = layers,
                       Nodes = nodes, isDirected = F)
+GetMultiOutStrengthSum(SupraAdjacencyMatrix = sam, Layers =layers,
+                       Nodes = nodes, isDirected = F)
 ```
 La centralidad k-core está en función de si el nodo pertenece a un cluster que posee un papel destacable en la interconectividad de la red.
 ```{r}
 GetMultiKCoreCentrality(SupraAdjacencyMatrix = sam, Layers = layers,
                         Nodes = nodes)
 ```
-Faltan varios comandos por completar. Lo iré subiendo en la semana.
+Mide el grado relativo de influencia de un nodo en una red tomando en cuenta solo las rutas geodésicas, es decir, las distancias más cortas entre un nodo con respecto a otros. Penaliza las conexiones con los nodos más distantes mientras que da prioridad a los vecinos inmediatos.
+```{r}
+GetMultiKatzCentrality(SupraAdjacencyMatrix = sam, Layers = layers,
+                       Nodes = nodes)
+```
+Es un ajuste a la centralidad de Katz basado en un modelo Random-Walk. Toma en cuenta el número de enlaces que recibe un nodo, naturalmente entre mayor sea este número, mayor la importancia del nodo. Este algoritmo prioriza los enlaces con nodos de mayor jerarquía, es decir, con nodos que a su vez podean mayor centralidad, además de premiar los enlaces parcimoniosos.
+```{r}
+GetMultiPageRankCentrality(SupraAdjacencyMatrix = sam, Layers = layers,
+                           Nodes = nodes)
+```
 
+Genera una matriz de distancias, además de calcular la media del número de pasos de las rutas más cortas entre todos los pares de nodos de la red (una medida de la eficiencia de la conectividad de la red), así como el coeficiente de cercanía (el núpero  de nodos de la red sobre la suma de las distancias más cortas entre un nodo con el resto de nodos de la red, o simplemente el inverso de dicha sumatoria).
+```{r}
+GetMultiPathStatistics(SupraAdjacencyMatrix = sam, Layers = layers,
+                       Nodes = nodes)
+```
+En este caso no se promedian las distancias más cortas, sino que el algoritmo promedia la sumatoria de las distancias entre un nodo y sus vecinos calculadas a partir de un algoritmo estocástico de random-walk.
+```{r}
+GetMultiRWCentrality(
+  SupraAdjacencyMatrix = sam,
+  Layers = layers,
+  Nodes = nodes,
+  Type = "classical",
+  #"clasical", "pagerank", "diffusive"
+  Method = "multilayer"
+  #"multilayer", "perlayer"
+)
+```
+Promedia la cantidad de conexiones que un nodo tiene con las demás capas.
+```{r}
+GetMultiplexityCentrality(SupraAdjacencyMatrix = sam, Layers = layers,
+                          Nodes = nodes)
+```
 
+```{r}
+GetConnectedComponents(SupraAdjacencyMatrix = sam, Layers = layers,
+                       Nodes = nodes)
+```
+```{r}
 
+```
