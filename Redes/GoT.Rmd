@@ -17,10 +17,246 @@ library(igraph)
 library(readxl)
 ```
 
+Se cargan todas las bases de datos
 
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+##Season 1
+TargaryenGoT1 <- read_excel("TargaryenGoT.xlsx", 
+                             +     sheet = "Stark")
+as.data.frame(TargaryenGoT1)
+gS1<-graph_from_data_frame(TargaryenGoT1, directed = TRUE)
+set_edge_attr(gS1, "Weight", index = E(gS1), value = TargaryenGoT1$Weight)
+plot(gS1)
+##Season 2
+TargaryenGoT2 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Tully")
+as.data.frame(TargaryenGoT2)
+gS2<-graph_from_data_frame(TargaryenGoT2, directed = TRUE)
+set_edge_attr(gS2, "Weight", index = E(gS2), value = TargaryenGoT2$Weight)
+plot(gS2)
+##Season 3
+TargaryenGoT3 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Lannister")
+as.data.frame(TargaryenGoT3)
+gS3<-graph_from_data_frame(TargaryenGoT3, directed = TRUE)
+set_edge_attr(gS3, "Weight", index = E(gS3), value = TargaryenGoT3$Weight)
+plot(gS3)
+##Season 4
+TargaryenGoT4 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Tyrell")
+as.data.frame(TargaryenGoT4)
+gS4<-graph_from_data_frame(TargaryenGoT4, directed = TRUE)
+set_edge_attr(gS4, "Weight", index = E(gS4), value = TargaryenGoT4$Weight)
+plot(gS4)
+##Season 5
+TargaryenGoT5 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Martell")
+as.data.frame(TargaryenGoT5)
+gS5<-graph_from_data_frame(TargaryenGoT5, directed = TRUE)
+set_edge_attr(gS5, "Weight", index = E(gS5), value = TargaryenGoT5$Weight)
+plot(gS5)
+##Season 6
+TargaryenGoT6 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Baratheon")
+as.data.frame(TargaryenGoT6)
+gS6<-graph_from_data_frame(TargaryenGoT6, directed = TRUE)
+set_edge_attr(gS6, "Weight", index = E(gS6), value = TargaryenGoT6$Weight)
+plot(gS6)
+##Season 7
+TargaryenGoT7 <- read_excel("TargaryenGoT.xlsx", 
+                            +     sheet = "Arryn")
+as.data.frame(TargaryenGoT7)
+gS7<-graph_from_data_frame(TargaryenGoT7, directed = TRUE)
+set_edge_attr(gS7, "Weight", index = E(gS7), value = TargaryenGoT7$Weight)
+plot(gS7)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#Distribución del peso de las conexiones
+Corresponden al número de veces que un personaje interactúa con otro a lo largo de una temprada. Como se puede observar, a travez de las distintas temporadas de la serie, se observa un patrón donde la mayoría de los personajes, especualmente los muchos personajes secundarios, poseen pocas apariciones a lo largo de la trama, y por lo tanto, pocas interacciones.
+
+La mayoría de los personajes que poseen un ranking más alto en esta escala, corresponden a los personajes principales, que son pocos comparados con la gran cantidad de personajes secundarios.
+```{r}
+attach(mtcars)
+par(mfrow=c(2,4))
+plot(as.numeric(unlist(edge.attributes(gS1))), col = "green")
+plot(as.numeric(unlist(edge.attributes(gS2))), col = "red")
+plot(as.numeric(unlist(edge.attributes(gS3))), col = "yellow")
+plot(as.numeric(unlist(edge.attributes(gS4))), col = "blue")
+plot(as.numeric(unlist(edge.attributes(gS5))), col = "purple")
+plot(as.numeric(unlist(edge.attributes(gS6))), col = "brown")
+plot(as.numeric(unlist(edge.attributes(gS7))), col = "orange")
+```
+Ahora fusionamos las redes individuales correspondientes a las capas en una sola red multiplex con el paquete multinet. Se genera primero una red vacía, para luego agregar las capas a partir de redes igraph.
+```{r}
+library(multinet)
+net<-ml_empty()
+l <- layout_circular_ml(net)
+add_igraph_layer_ml(net, gS1, "Season1")
+add_igraph_layer_ml(net, gS2, "Season2")
+add_igraph_layer_ml(net, gS3, "Season3")
+add_igraph_layer_ml(net, gS4, "Season4")
+add_igraph_layer_ml(net, gS5, "Season5")
+add_igraph_layer_ml(net, gS6, "Season6")
+add_igraph_layer_ml(net, gS7, "Season7")
+```
+Se verifican las capas y los nodos.
+```{r}
+num_layers_ml(net)
+layers_ml(net)
+layers <- as.list(net)
+names(layers)
+num_actors_ml(net)
+Num_personajes<-c(
+        num_actors_ml(net, "Season1"),
+        num_actors_ml(net, "Season2"),
+        num_actors_ml(net, "Season3"),
+        num_actors_ml(net, "Season4"),
+        num_actors_ml(net, "Season5"),
+        num_actors_ml(net, "Season6"),
+        num_actors_ml(net, "Season7")
+        )
+```
+Como podemos observar, el número de personajes se mantiene aproximadamente en la misma proporción a lo largo de toda la serie, pues con forme algunos de estos mueren o se ausentan de la trama, nuevos personajes van llenando ese vacío.
+```{r}
+barplot(Num_personajes)
+actors_ml(net)
+actors_ml(net, "Season1")
+actors_ml(net, "Season2")
+actors_ml(net, "Season3")
+actors_ml(net, "Season4")
+actors_ml(net, "Season5")
+actors_ml(net, "Season6")
+actors_ml(net, "Season7")
+```
+Para visualizar la red y que esta sea más legible, en contraste a solo que usar
+la función plot(net), generamos un diseño que muestra cada capa de forma independiente a las demás.
+```{r}
+attach(mtcars)
+par(mfrow=c(1,1))
+l <- layout_multiforce_ml(net, w_inter = 0, gravity = 1)
+plot(net,
+     vertex.labels = "",
+     #Cada celda de la cuadricula representa una de las capas
+     grid = c(2,4),
+     layout = l,
+     legend.x="bottomright", legend.inset = c(.03,.03)
+)
+```
+Se pueden analizar y graficar los atributos independientemente (este no es el caso, pero si se puede ver con objetos precargados de multinet).
+```{r}
+attributes_ml(net)
+FlorenceNet<-ml_florentine()
+attributes_ml(FlorenceNet)
+plot(FlorenceNet)
+c <- clique_percolation_ml(FlorenceNet)
+plot(FlorenceNet, vertex.labels.cex=.5, com=c)
+```
+Podemos transformar las capas en redes simples y analizarlas individualmente.
+```{r}
+graphS1<-as.igraph(net, layers = "Season1")
+plot(graphS1)
+hist(degree.distribution(graphS1))
+```
+El coeficiente de transitividad mide el grado de agrupamiento, que a diferencia de las redes simples, en redes multicapa también está determinado por los ciclos que se forman en el resto de capas.
+```{r}
+transitivity(as.list(net)[[1]])
+transitivity(graphS1)
+```
+Esta función permite comparar las distintas capas en busca de nodos réplica, es decir, que estan presentes en dos o más capas. Por supuesto, las capas comparadas con si mismas tendrán un grado de similitud de uno, y a partir de ahí disminuye.
+```{r}
+comp <- layer_comparison_ml(net, method = "jaccard.actors")
+comp
+library(corrplot)
+comp2<-as.matrix(comp)
+corrplot(comp2)
+```
+También podemos comparar el degree entre los nodos de cada capa.
+```{r}
+comp <- layer_comparison_ml(net, method = "pearson.degree")
+comp
+comp2<-as.matrix(comp)
+corrplot(comp2)
+```
+Del mismo modo, podemos comparar si los nodos están conectados con los mismos actores en las distintas capas o sus interacciones cambian.
+```{r}
+comp <- layer_comparison_ml(net, method = "jaccard.edges")
+comp
+comp2<-as.matrix(comp)
+corrplot(comp2)
+```
+Podemos ver que algunas propiedades como el número de interacciones se mantienen, pero otras como las relaciones entre los personajes o la presencia de algunos personajes a lo largo de la trama, van cambiando.
+De igual modo, podemos conocer a aquellos personajes con mayor número de interacciones a lo largo de toda la trama, permitiendonos así conocer quiénes son los personajes protagónicos a lo largo de toda la serie.
+```{r}
+deg <- degree_ml(net)
+top_degrees <- head(deg[order(-deg)])
+top_actors <- head(actors_ml(net)[order(-deg)])
+top_actors
+```
+Podemos observar esta dinámica analizando cada una de las temporadas.
+```{r}
+graphS1<-as.igraph(net, layers = "Season1")
+tail(sort(degree(graphS1)))
+graphS2<-as.igraph(net, layers = "Season2")
+tail(sort(degree(graphS2)))
+graphS3<-as.igraph(net, layers = "Season3")
+tail(sort(degree(graphS3)))
+graphS4<-as.igraph(net, layers = "Season4")
+tail(sort(degree(graphS4)))
+graphS5<-as.igraph(net, layers = "Season5")
+tail(sort(degree(graphS5)))
+graphS6<-as.igraph(net, layers = "Season6")
+tail(sort(degree(graphS6)))
+graphS7<-as.igraph(net, layers = "Season7")
+tail(sort(degree(graphS7)))
+```
+Como podemos observar, a pesar de que el personaje con mayor número de conexiones (Tyrion), no mantiene el primer lugar en ninguna de las temporadas, a lo largo de la serie mantiene un número alto de las mismas, mientras otros personajes principales salen de la trama o caen en el ranking de degree.
+
+Si queremos cuantificar cómo cambian las interacciones para los personajes principales podemos calcular la desviación estandar del degree de los mismos a lo largo de las distintas capas.
+```{r}
+Ddesv<-degree_deviation_ml(net, actors = top_actors)
+names(Ddesv)<-top_actors
+Ddesv
+```
+Analizamos la distribuci?n del degree en la red en conjunto. Se observa que la mayor?a de personajes (secundarios) poseen pocas conexiones pues aparecen pocas veces en la trama, y solo unos pocos (los principales) poseen un gran n?mero de conexiones.
+
+De igual modo podemos analizar las vecindades, es decir, los conjuntos de nodos que estan agrupados junto a un nodo en concreto a lo largo de las distintas capas. Debido a que hay actores, especialmente personajes secundarios, que solo aparecen durante una sola temporada, carecen de una vecindad con nodos de otras capas.
+```{r}
+hist(degree_ml(net), col = "red")
+m = neighborhood_ml(net, layers = "Season1")
+tail(sort(m))
+```
+Podemos clusterizar las comunidades, es decir, los conjuntos de nodos densamente interconectados, y visualizarlos en un gráfico.
+
+Método de Louvain:
+```{r}
+ml_clust <- glouvain_ml(net)
+l <- layout_multiforce_ml(net)
+plot(net,
+     com = ml_clust,
+     vertex.labels = "",
+     layout=l, grid = c(2,4),
+     legend.x="bottomright",
+     legend.inset = c(.05, .05)
+)
+
+ml_clust <-clique_percolation_ml(net, k=4, m=2)
+plot(net, com = ml_clust, vertex.labels = "", layout=l, grid = c(2,3),
+        legend.x= "bottomright", legend.inset = c(.05, .05))
+```
+Mientras que el m?todo Louvain generalizado toma en cuenta todos los nodos de una comunidad, el algoritmo de Percolaci?n de Cliques solo toma en cuenta un número limitado de los mismos, bas?ndose en dos par?metros:
+
+k se define como el tamaño mínimo del clique, estructuras formadas por subconjuntos de nodos donde si, por ejemplo, existe k=3 el clique tendrá forma de triángulo, si k=4 de un tetraedro, y así sucesivamente.
+
+M es el n?mero mínimo de capas donde un clique esté presente, en este caso solo tomamos en cuenta pares de capas.
+```{r}
+ml_clust <- clique_percolation_ml(net, k=3, m=2)
+plot(net,
+     com = ml_clust,
+     vertex.labels = "",
+     layout=l, grid = c(2,4),
+     legend.x="bottomright",
+     legend.inset = c(.05, .05)
+)
+```
+
+
