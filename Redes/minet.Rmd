@@ -1,0 +1,81 @@
+---
+title: "minet"
+author: "Víctor LV"
+date: "13/6/2021"
+output: html_document
+---
+
+```{r}
+library(seqtime)
+library(minet)
+```
+Se carga la función T_Collapse con una base de datos referente a un individuo que sufrió intoxicación por alimentos y una consecuente infección por Salmonella en el día 159.
+```{r}
+T_collapse<-function(T_table, O_table, names_level){
+  require(seqtime)
+  #Identifica los taxones y genera una matriz de columnas vacías
+  unq<-unique(T_table[,names_level]); unq
+  mat <- matrix(, nrow = length(O_table), ncol = 0)
+  #Fusiona los otus que pertenezcan al mismo taxón
+  for(i in 1:length(unq)){
+    a<-which(T_table[,names_level] %in% unq[i]); a
+    b<-as.matrix(colSums(O_table[a,]))
+    mat<-cbind(mat, b)
+  }
+  #Asigna los nombres a las columnas de la matriz resultante
+  colnames(mat)<-unq
+  #La matriz se transforma a valores relativos de las muestras
+  #mat<-mat/rowSums(mat)
+  return(print(mat))
+}
+
+mat<-T_collapse(T_table = david_stool_lineages,
+                O_table = david_stoolB_otus,
+                names_level = 5)
+dim(mat)
+#Se divide la tabla en antes y después de la infección.
+otumat1<-mat[1:158,]
+dim(otumat1)
+otumat2<-mat[159:179,]
+dim(otumat2)
+```
+Se calcula inicialmente la información mutua entre todos los pares de variables. Esto se puede hacer empleando el estimador de "spearman", el de "pearson" o el estimador de "kendall".
+Posteiormente se aplica un algoritmo de inferencia: aracne, clr, mrnet o mrnetb. Para este caso solo empleamos aracne y mrnet, pues los otros dos algoritmos retornaron redes con una conectividad uniforme, por lo cual no se pueden
+realizar operaciones para este tipo de redes.
+Aracne aplica la desigualdad de procesamiento de datos a todos los tripletes de nodos para eliminar el borde menos significativo de cada triplete.
+```{r}
+mim <- build.mim(otumat2,estimator="spearman")
+net <- aracne(mim, eps = 0)
+g1<-graph_from_adjacency_matrix(
+  net,
+  mode = "undirected",
+  weighted = TRUE,
+  diag = TRUE,
+  add.colnames = NULL,
+  add.rownames = NA
+)
+hist(degree(g1))
+plot(g1)
+```
+El enfoque de MRNET se fundamenta en seleccionar la variable Xi con máxima información mútua en un conjunto S. El algoritmo infoere la red enfatizando la máxima relevancia y la mínima redundancia.
+```{r}
+mim <- build.mim(otumat1,estimator="spearman")
+
+net <- mrnet(mim)
+
+g1<-graph_from_adjacency_matrix(
+  net,
+  mode = "undirected",
+  weighted = TRUE,
+  diag = TRUE,
+  add.colnames = NULL,
+  add.rownames = NA
+)
+hist(degree(g1))
+plot(g1)
+```
+
+```{r}
+
+```
+
