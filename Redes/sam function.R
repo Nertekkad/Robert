@@ -1,10 +1,11 @@
 library(igraph)
+
 #Generación de las redes----
-g1<-erdos.renyi.game(12, 0.5)
-g2<-erdos.renyi.game(20, 0.5)
-g3<-erdos.renyi.game(9, 0.5)
-g4<-erdos.renyi.game(8, 0.5)
-g5<-erdos.renyi.game(13, 0.5)
+g1<-erdos.renyi.game(4, 0.1)
+g2<-erdos.renyi.game(2, 0.5)
+g3<-erdos.renyi.game(5, 0.1)
+g4<-erdos.renyi.game(4, 0.5)
+g5<-erdos.renyi.game(3, 0.5)
 g6<-erdos.renyi.game(16, 0.5)
 g7<-erdos.renyi.game(17, 0.5)
 g8<-erdos.renyi.game(23, 0.5)
@@ -62,21 +63,59 @@ for(i in 1:length(matlist2)){
 matlist<-c(matlist[[which.max(a)]], m2); matlist
 length(matlist)
 
-matseed<-as.numeric(matseed)
+#Generación de columnas de la matriz de supradyacencia (derecha)----
+a<-c()
 for(i in 1:length(matlist)){
-  matlista[i]<-cbind(matlist[[i]], c(1:((matseed^2)*2))*0)
-}; matlista
+  a[i]<-i-1
+}; a<-rev(a); a
 
 matseed<-as.numeric(matseed)
-cbind(matlist[[2]], c(1:((matseed^2)*2))*0)
-length(matlist)
+matlistA<-list()
+for(i in 1:length(matlist)){
+  matlistA[i]<-cbind(matlist[[i]], c(1:((matseed^2)*a[i]))*0)
+}; matlistA
 
-for(i in length(matlist):1){
-  i<-i-1
-  print(i)
-}
-  
-mat1
+matlistA<-matlistA[-length(matlistA)]
+matlistA<-c(matlistA, matlist[length(matlist)]); matlistA
+
+#Generación de columnas de la matriz de supradyacencia (izquierda)----
+a<-c()
+for(i in 1:length(matlist)){
+  a[i]<-i-1
+}; a
+
+matlistB<-list()
+for(i in 1:length(matlistA)){
+  matlistB[i]<-cbind(c(1:((matseed^2)*a[i]))*0, matlistA[[i]])
+}; matlistB
+
+matlistB<-matlistB[-1]; matlistB
+
+#Se unen las filas en una única matriz de supradyacencia----
+mat<-matlistA[[1]]; dim(mat)
+for(i in 1:length(matlistB)){
+  mat<-rbind(mat, matlistB[[i]])
+}; dim(mat)
+
+
+
+
+
+
+
+
+colnames(f)<-c(colnames(matlistB[[1]]), colnames(matlistB[[2]]))
+a<-colnames(matlistB[[1]]); class(a)
+b<-colnames(matlistB[[2]]); class(b)
+colnames(f)<-
+c<-LETTERS[1:70]; class(c)
+f<-rbind(matlistB[[1]], matlistB[[2]])
+colnames(f)
+
+
+
+
+
 for(i in 1:dim(matlist)[1]) +
   for(j in 1:dim(matlist[1])[2]) +
     if(colnames(matlist)[i]==rownames(mat1)[j]){
@@ -101,3 +140,14 @@ r<-matlist[-length(matlist)]; length(r)
 r
 
 
+library(muxViz)
+lay <- layoutMultiplex(muxlist, layout="fr", ggplot.format=F, box=T)
+
+# Show the multiplex network
+layer.colors <- rainbow(length(muxlist)); layer.colors
+plot_multiplex3D(muxlist, layer.layout=lay, layer.colors=layer.colors,
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels="auto", layer.labels.cex=1.5,
+                 node.size.values="auto", node.size.scale=0.8,
+                 show.aggregate=T)
+as_adjacency_matrix(muxlist[[1]])
