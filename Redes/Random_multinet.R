@@ -173,3 +173,4 @@ plot(ntE,
      legend.x="bottomright",
      legend.inset = c(.05, .05))
 
+

@@ -103,10 +103,21 @@ Se visualiza la fred resultante mediante en un gráfico 3D
 ```{r}
 library(muxViz)
 g.list<-list(sparcc_g, sparcc_g2)
+length(V(sparcc_g)); length(V(sparcc_g2))
 lay <- layoutMultiplex(g.list, layout="fr", ggplot.format=F, box=T)
 plot_multiplex3D(g.list, layer.layout=lay, layer.colors=c("red", "blue"),
                          layer.shift.x=0.5, layer.space=2,
                          layer.labels="auto", layer.labels.cex=2,
                          node.size.values="auto", node.size.scale=1,
                          show.aggregate=T)
+```
+Se requiere fucionar las matrices de adyacencia en una única matriz de supradyacencia característica de una red temporal.
+```{r}
+library(igraph)
+as_adjacency_matrix(graph = g.list[[1]], type = "both",
+  attr = NULL, edges = FALSE, names = TRUE,
+  sparse = igraph_opt("sparsematrices"))
+as_adjacency_matrix(graph = g.list[[2]], type = "both",
+  attr = NULL, edges = FALSE, names = TRUE,
+  sparse = igraph_opt("sparsematrices"))
 ```

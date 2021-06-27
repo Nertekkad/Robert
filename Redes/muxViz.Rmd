@@ -26,8 +26,8 @@ las conexiones entre las capas y el peso de las conexiones.
 ```{r}
 tb <- BuildExtendedEdgelistFromSupraAdjacencyMatrix(
   SupraAdjacencyMatrix = sam,
-  Layers,
-  Nodes,
+  Layers = layers,
+  Nodes =nodes,
   isDirected = F
 )
 tb
