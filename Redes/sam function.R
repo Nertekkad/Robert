@@ -1,11 +1,11 @@
 library(igraph)
 
 #Generación de las redes----
-g1<-erdos.renyi.game(4, 0.1)
-g2<-erdos.renyi.game(2, 0.5)
-g3<-erdos.renyi.game(5, 0.1)
-g4<-erdos.renyi.game(4, 0.5)
-g5<-erdos.renyi.game(3, 0.5)
+g1<-erdos.renyi.game(18, 0.5)
+g2<-erdos.renyi.game(13, 0.5)
+g3<-erdos.renyi.game(15, 0.5)
+g4<-erdos.renyi.game(13, 0.5)
+g5<-erdos.renyi.game(14, 0.5)
 g6<-erdos.renyi.game(16, 0.5)
 g7<-erdos.renyi.game(17, 0.5)
 g8<-erdos.renyi.game(23, 0.5)
@@ -97,8 +97,16 @@ for(i in 1:length(matlistB)){
   mat<-rbind(mat, matlistB[[i]])
 }; dim(mat)
 
+#Se asignan los nombres de las filas a los de las columnas----
+colnames(mat)<-rownames(mat)
+colnames(mat)
 
 
+
+
+library(muxViz)
+GetMultiAuthCentrality(SupraAdjacencyMatrix = mat, Layers = length(muxlist),
+                       Nodes = 18)
 
 
 
