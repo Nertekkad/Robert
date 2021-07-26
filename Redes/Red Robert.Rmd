@@ -1,0 +1,94 @@
+---
+title: "muxViz multigraph"
+author: "Víctor LV"
+date: "25/7/2021"
+output: html_document
+---
+Se cargan los datos y se extraen los datos de los taxones y los otus almacenados en objeto ps2.
+```{r}
+setwd("C:/Users/LaV_V/Downloads")
+print(load("mis_phyloseq.RData"))
+T_table<-as.data.frame(tax_table(ps2)); dim(T_table)
+O_table<-as.data.frame(t(otu_table(ps2))); dim(O_table)
+```
+Se carga la función T_Collapse
+```{r}
+#source("me falta guardarlo en un documento aparte")
+T_collapse<-function(T_table, O_table, names_level){
+  require(seqtime)
+  #Identifica los taxones y genera una matriz de columnas vacías
+  unq<-unique(T_table[,names_level]); unq
+  mat <- matrix(, nrow = length(O_table), ncol = 0)
+  #Fusiona los otus que pertenezcan al mismo taxón
+  for(i in 1:length(unq)){
+    a<-which(T_table[,names_level] %in% unq[i]); a
+    b<-as.matrix(colSums(O_table[a,]))
+    mat<-cbind(mat, b)
+  }
+  #Asigna los nombres a las columnas de la matriz resultante
+  colnames(mat)<-unq
+  #La matriz se transforma a valores relativos de las muestras
+  #mat<-mat/rowSums(mat)
+  return(print(mat))
+}
+```
+Se ingresa primero la tabla de tacones, luego la tabla de otus y finalmente el nivel taxonómico al cual se desea sintetizar la tabla.
+```{r}
+T_Collapsed<-T_collapse(T_table = T_table, O_table = O_table,
+                        names_level = "Family")
+dim(T_Collapsed)
+```
+Se identifican los elementos pertenecientes a la planta y al insecto.
+```{r}
+Insect<-which(sample_data(ps2)$Type =="Insect")
+Insect<-sample_data(ps2)$ID[Insect]; Insect
+Plant<-which(sample_data(ps2)$Type =="Plant")
+Plant<-sample_data(ps2)$ID[Plant]; Plant
+```
+Generamos matrices independientes para los datos de la planta y del insecto.
+```{r}
+Insectmat <- T_Collapsed[Insect,]
+Plantmat <- T_Collapsed[Plant,]
+```
+Construímos la red correspondiente a los datos de abundancias del insecto.
+```{r}
+library(SpiecEasi)
+sparccNet<-sparcc(Insectmat)
+sparccNet <- abs(sparccNet$Cor) >= 0.2
+insect_g<-adj2igraph(sparccNet)
+vertex.attributes(insect_g) <- list(name = colnames(Insectmat))
+plot_network(insect_g)
+```
+Repetimos el mismo proceso para el caso de la planta.
+```{r}
+library(SpiecEasi)
+sparccNet<-sparcc(Plantmat)
+sparccNet <- abs(sparccNet$Cor) >= 0.2
+plant_g<-adj2igraph(sparccNet)
+vertex.attributes(plant_g) <- list(name = colnames(Plantmat))
+plot_network(plant_g)
+```
+En la función v_colored() se identifican los elementos únicos del nivel taxonómico de mayor jerarquía y se genera una paleta de colores con un color asociado a cada elemento.En el ciclo for se obtienen los números de identificación asociados a cada uno de los elementos de unq, para posteriormente asignarles un color dentro del grafo.
+```{r}
+v_colored<-function(g, g_tax, p_tax, g_colors){
+  #Identificación de elementos únicos del taxón de mayor jerarquía
+  unq<-unique(T_table[,g_tax])
+  #Asignación de colores asociados a los elementos de g_tax en el objeto igraph
+  for(i in 1:length(unq)){
+    IDs<-which(unq[i] == T_table[,g_tax])
+    t_names<-unique(T_table[p_tax][IDs,])
+    vertex<-which(vertex.attributes(g)$name %in% t_names)
+    V(g)[vertex]$color<-g_colors[i]
+  }
+  g_plot<-plot(g, vertex.color=vertex.attributes(plant_g)$color)
+  return(g_plot)
+}
+```
+El input de la función v_colored() es un objeto igraph, una paleta de colores cuya longitud debe coincidir con el input de g_tax, además de dos categorías taxonómicas, la primera de las cuales tendrá mayor jerarquía que la segunda. Por ejemplo, en caso de que emplearamos la categoría taxonómica de phylum como input en g_tax, p_tax podría ser cualquiera de los niveles taxonómicos inferiores (clase, familia o especie), además de que este debe ser equivalente al mismo input que se empleo previamente en la función T_Collapse().
+```{r}
+unq<-unique(T_table[,"Class"])
+colors<-rainbow(length(unq))
+v_colored(insect_g, g_tax = "Class", p_tax = "Family", g_colors = colors)
+v_colored(plant_g, g_tax = "Class", p_tax = "Family", g_colors = colors)
+```
+
