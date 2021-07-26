@@ -1,5 +1,24 @@
 library(igraph)
 
+
+T_collapse<-function(T_table, O_table, names_level){
+  require(seqtime)
+  #Identifica los taxones y genera una matriz de columnas vacías
+  unq<-unique(T_table[,names_level]); unq
+  mat <- matrix(, nrow = length(O_table), ncol = 0)
+  #Fusiona los otus que pertenezcan al mismo taxón
+  for(i in 1:length(unq)){
+    a<-which(T_table[,names_level] %in% unq[i]); a
+    b<-as.matrix(colSums(O_table[a,]))
+    mat<-cbind(mat, b)
+  }
+  #Asigna los nombres a las columnas de la matriz resultante
+  colnames(mat)<-unq
+  #La matriz se transforma a valores relativos de las muestras
+  #mat<-mat/rowSums(mat)
+  return(print(mat))
+}
+
 #Generación de las redes----
 g1<-erdos.renyi.game(18, 0.5)
 g2<-erdos.renyi.game(13, 0.5)
@@ -20,7 +39,7 @@ V(g5)$name <- LETTERS[1:vcount(g5)]; plot(g5)
 V(g6)$name <- LETTERS[1:vcount(g6)]; plot(g6)
 V(g7)$name <- LETTERS[1:vcount(g7)]; plot(g7)
 V(g8)$name <- LETTERS[1:vcount(g8)]; plot(g8)
-muxlist<-list(g1, g2, g3, g4, g5)
+muxlist<-list(g1, g2)
 
 #Transformación de las redes en matrices de adyacencia----
 matlist<-list()
@@ -100,7 +119,6 @@ for(i in 1:length(matlistB)){
 #Se asignan los nombres de las filas a los de las columnas----
 colnames(mat)<-rownames(mat)
 colnames(mat)
-
 
 
 

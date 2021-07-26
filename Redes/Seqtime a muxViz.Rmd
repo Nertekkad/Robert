@@ -36,7 +36,7 @@ Se implementa el comando T_Collapse()
 ```{r}
 mat<-T_collapse(T_table = david_stool_lineages,
                 O_table = david_stoolB_otus,
-                names_level = 5)
+                names_level = 3)
 dim(mat)
 ```
 Muestras de un individuo que sufrió intoxicación por alimentos y una consecuente infección por Salmonella en el día 159.
