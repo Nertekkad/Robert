@@ -80,15 +80,31 @@ v_colored<-function(g, g_tax, p_tax, g_colors){
     vertex<-which(vertex.attributes(g)$name %in% t_names)
     V(g)[vertex]$color<-g_colors[i]
   }
-  g_plot<-plot(g, vertex.color=vertex.attributes(plant_g)$color)
-  return(g_plot)
+  return(g)
 }
 ```
 El input de la función v_colored() es un objeto igraph, una paleta de colores cuya longitud debe coincidir con el input de g_tax, además de dos categorías taxonómicas, la primera de las cuales tendrá mayor jerarquía que la segunda. Por ejemplo, en caso de que emplearamos la categoría taxonómica de phylum como input en g_tax, p_tax podría ser cualquiera de los niveles taxonómicos inferiores (clase, familia o especie), además de que este debe ser equivalente al mismo input que se empleo previamente en la función T_Collapse().
 ```{r}
 unq<-unique(T_table[,"Class"])
 colors<-rainbow(length(unq))
-v_colored(insect_g, g_tax = "Class", p_tax = "Family", g_colors = colors)
-v_colored(plant_g, g_tax = "Class", p_tax = "Family", g_colors = colors)
+insect_g<-v_colored(insect_g, g_tax = "Class", p_tax = "Family",
+                    g_colors = colors)
+plant_g<-v_colored(plant_g, g_tax = "Class", p_tax = "Family",
+                   g_colors = colors)
+plot(insect_g, vertex.color=vertex.attributes(plant_g)$color)
+plot(plant_g, vertex.color=vertex.attributes(plant_g)$color)
 ```
 
+```{r}
+library(muxViz)
+g.list<-list(insect_g, plant_g); g.list
+lay <- layoutMultiplex(g.list, layout="fr", ggplot.format=F, box=T)
+plot_multiplex3D(g.list, layer.layout=lay,
+                 layer.colors=rainbow(length(g.list)),
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels="auto", layer.labels.cex=1.5,
+                 node.size.values="auto", node.size.scale=0.8,
+                 node.colors=vertex.attributes(insect_g)$color,
+                 edge.colors="#dadada",
+                 show.aggregate=F)
+```
