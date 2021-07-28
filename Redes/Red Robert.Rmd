@@ -15,7 +15,6 @@ Se carga la función T_Collapse
 ```{r}
 #source("me falta guardarlo en un documento aparte")
 T_collapse<-function(T_table, O_table, names_level){
-  require(seqtime)
   #Identifica los taxones y genera una matriz de columnas vacías
   unq<-unique(T_table[,names_level]); unq
   mat <- matrix(, nrow = length(O_table), ncol = 0)
@@ -35,8 +34,18 @@ T_collapse<-function(T_table, O_table, names_level){
 Se ingresa primero la tabla de tacones, luego la tabla de otus y finalmente el nivel taxonómico al cual se desea sintetizar la tabla.
 ```{r}
 T_Collapsed<-T_collapse(T_table = T_table, O_table = O_table,
-                        names_level = "Family")
+                        names_level = "Genus")
 dim(T_Collapsed)
+```
+Se identifican los elementos no clasificados para ser eliminados.
+```{r}
+colnames(T_Collapsed)
+T_Collapsed<-T_Collapsed[, -c(which(colnames(T_Collapsed) == "unclassified"))]
+                 #Activar en caso de trabajar a nivel de "Family"
+                 #which(colnames(T_Collapsed) == "JG30-KF-CM45"),
+                 #which(colnames(T_Collapsed) == "67-14"),
+                 #which(colnames(T_Collapsed) == "AKIW781"))]
+colnames(T_Collapsed)
 ```
 Se identifican los elementos pertenecientes a la planta y al insecto.
 ```{r}
@@ -70,7 +79,7 @@ plot_network(plant_g)
 ```
 En la función v_colored() se identifican los elementos únicos del nivel taxonómico de mayor jerarquía y se genera una paleta de colores con un color asociado a cada elemento.En el ciclo for se obtienen los números de identificación asociados a cada uno de los elementos de unq, para posteriormente asignarles un color dentro del grafo.
 ```{r}
-v_colored<-function(g, g_tax, p_tax, g_colors){
+v_colored<-function(g, T_table, g_tax, p_tax, g_colors){
   #Identificación de elementos únicos del taxón de mayor jerarquía
   unq<-unique(T_table[,g_tax])
   #Asignación de colores asociados a los elementos de g_tax en el objeto igraph
@@ -84,17 +93,33 @@ v_colored<-function(g, g_tax, p_tax, g_colors){
 }
 ```
 El input de la función v_colored() es un objeto igraph, una paleta de colores cuya longitud debe coincidir con el input de g_tax, además de dos categorías taxonómicas, la primera de las cuales tendrá mayor jerarquía que la segunda. Por ejemplo, en caso de que emplearamos la categoría taxonómica de phylum como input en g_tax, p_tax podría ser cualquiera de los niveles taxonómicos inferiores (clase, familia o especie), además de que este debe ser equivalente al mismo input que se empleo previamente en la función T_Collapse().
+
+Nota: Si se desea visualizar mejor con zoom, 
 ```{r}
 unq<-unique(T_table[,"Phylum"])
 colors<-rainbow(length(unq))
-insect_g<-v_colored(insect_g, g_tax = "Phylum", p_tax = "Family",
+insect_g<-v_colored(insect_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                     g_colors = colors)
-plant_g<-v_colored(plant_g, g_tax = "Phylum", p_tax = "Family",
+plant_g<-v_colored(plant_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                    g_colors = colors)
-plot(insect_g, vertex.color=vertex.attributes(plant_g)$color)
-plot(plant_g, vertex.color=vertex.attributes(plant_g)$color)
+plot(insect_g, vertex.color=vertex.attributes(insect_g)$color,
+     vertex.size = 15)
+legend(x=-2.7, y=-0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+       bty="n", ncol=1)
+#Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
+#el gráfico en Zoom,
+#legend(x=-2, y=0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+#       bty="n", ncol=1)
+plot(plant_g, vertex.color=vertex.attributes(plant_g)$color,
+     vertex.size = 10)
+legend(x=-2.7, y=-0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+       bty="n", ncol=1)
+#Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
+#el gráfico en Zoom,
+#legend(x=-2, y=0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+#       bty="n", ncol=1)
 ```
-
+Construímos el gráfico 3D de una red multicapa multiplex con el paquete muxViz.
 ```{r}
 library(muxViz)
 g.list<-list(insect_g, plant_g); g.list
@@ -102,9 +127,41 @@ lay <- layoutMultiplex(g.list, layout="fr", ggplot.format=F, box=T)
 plot_multiplex3D(g.list, layer.layout=lay,
                  layer.colors=rainbow(length(g.list)),
                  layer.shift.x=0.5, layer.space=2,
-                 layer.labels=c("Insecto", "Planta"), layer.labels.cex=1.5,
+                 layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
                  node.size.values="auto", node.size.scale=0.6,
                  node.colors=vertex.attributes(insect_g)$color,
                  edge.colors="white",
                  show.aggregate=F)
+```
+Esta función nos permite clasificar los nodos en categorías taxonómicas superiores, es decir, que si los nodos representan géneros o familias, esta función permite clasificarlos a niveles superiores tales como Phylum.
+```{r}
+TaxGroup<-function(g, T_table, g_tax, p_tax){
+  unq<-unique(T_table[,g_tax])
+  for(i in 1:length(unq)){
+    IDs<-which(unq[i] == T_table[,g_tax])
+    t_names<-unique(T_table[p_tax][IDs,])
+    vertex<-which(vertex.attributes(g)$name %in% t_names)
+    V(g)[vertex]$Group<-unq[i]
+  }
+  return(g)
+}
+insect_g<-TaxGroup(insect_g, T_table, "Phylum", "Genus")
+vertex.attributes(insect_g)$Group[1:12]
+```
+
+
+```{r}
+ctr<-degree(insect_g)/degree(insect_g)[which.max(degree(insect_g))]
+Redpal<-heat.colors(5, alpha=1)
+hl1<-which(ctr > 0 & ctr <= 0.2)
+V(insect_g)[hl1]$hl<-Redpal[1]
+hl2<-which(ctr > 0.2 & ctr <= 0.4)
+V(insect_g)[hl2]$hl<-Redpal[2]
+hl3<-which(ctr > 0.4 & ctr <= 0.6)
+V(insect_g)[hl3]$hl<-Redpal[3]
+hl4<-which(ctr > 0.6 & ctr <= 0.8)
+V(insect_g)[hl4]$hl<-Redpal[4]
+hl5<-which(ctr > 0.8 & ctr <= 1)
+V(insect_g)[hl5]$hl<-Redpal[5]
+vertex.attributes(insect_g)$hl
 ```
