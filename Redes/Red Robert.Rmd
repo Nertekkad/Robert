@@ -80,6 +80,7 @@ plot_network(plant_g)
 En la función v_colored() se identifican los elementos únicos del nivel taxonómico de mayor jerarquía y se genera una paleta de colores con un color asociado a cada elemento.En el ciclo for se obtienen los números de identificación asociados a cada uno de los elementos de unq, para posteriormente asignarles un color dentro del grafo.
 ```{r}
 v_colored<-function(g, T_table, g_tax, p_tax, g_colors){
+  require(igraph)
   #Identificación de elementos únicos del taxón de mayor jerarquía
   unq<-unique(T_table[,g_tax])
   #Asignación de colores asociados a los elementos de g_tax en el objeto igraph
@@ -104,7 +105,7 @@ plant_g<-v_colored(plant_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                    g_colors = colors)
 plot(insect_g, vertex.color=vertex.attributes(insect_g)$color,
      vertex.size = 15)
-legend(x=-2.7, y=-0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+legend(x=-2.7, y=-0.3, unq, title = "Insect", pch=21, pt.bg=colors, pt.cex=2, cex=.8,
        bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
@@ -112,7 +113,7 @@ legend(x=-2.7, y=-0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
 #       bty="n", ncol=1)
 plot(plant_g, vertex.color=vertex.attributes(plant_g)$color,
      vertex.size = 10)
-legend(x=-2.7, y=-0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
+legend(x=-2.7, y=-0.3, unq, title = "Plant", pch=21, pt.bg=colors, pt.cex=2, cex=.8,
        bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
@@ -131,11 +132,13 @@ plot_multiplex3D(g.list, layer.layout=lay,
                  node.size.values="auto", node.size.scale=0.6,
                  node.colors=vertex.attributes(insect_g)$color,
                  edge.colors="white",
-                 show.aggregate=F)
+                 node.colors.aggr=vertex.attributes(insect_g)$color,
+                 show.aggregate=T)
 ```
 Esta función nos permite clasificar los nodos en categorías taxonómicas superiores, es decir, que si los nodos representan géneros o familias, esta función permite clasificarlos a niveles superiores tales como Phylum.
 ```{r}
 TaxGroup<-function(g, T_table, g_tax, p_tax){
+  require(igraph)
   unq<-unique(T_table[,g_tax])
   for(i in 1:length(unq)){
     IDs<-which(unq[i] == T_table[,g_tax])
@@ -151,17 +154,123 @@ vertex.attributes(insect_g)$Group[1:12]
 
 
 ```{r}
-ctr<-degree(insect_g)/degree(insect_g)[which.max(degree(insect_g))]
-Redpal<-heat.colors(5, alpha=1)
-hl1<-which(ctr > 0 & ctr <= 0.2)
-V(insect_g)[hl1]$hl<-Redpal[1]
-hl2<-which(ctr > 0.2 & ctr <= 0.4)
-V(insect_g)[hl2]$hl<-Redpal[2]
-hl3<-which(ctr > 0.4 & ctr <= 0.6)
-V(insect_g)[hl3]$hl<-Redpal[3]
-hl4<-which(ctr > 0.6 & ctr <= 0.8)
-V(insect_g)[hl4]$hl<-Redpal[4]
-hl5<-which(ctr > 0.8 & ctr <= 1)
-V(insect_g)[hl5]$hl<-Redpal[5]
-vertex.attributes(insect_g)$hl
+ctr<-function(g.list, ctr_type){
+  if(ctr_type == "degree"){
+    require(igraph)
+    for(i in 1:length(g.list)){
+       ctr_max<-which.max(degree(g.list[[i]]))
+       ctr<-degree(g.list[[i]])/degree(g.list[[i]])[ctr_max]
+       Redpal<-heat.colors(5, alpha=1)
+       hl1<-which(ctr > 0 & ctr <= 0.2)
+       V(g.list[[i]])[hl1]$hl<-Redpal[5]
+       hl2<-which(ctr > 0.2 & ctr <= 0.4)
+       V(g.list[[i]])[hl2]$hl<-Redpal[4]
+       hl3<-which(ctr > 0.4 & ctr <= 0.6)
+       V(g.list[[i]])[hl3]$hl<-Redpal[3]
+       hl4<-which(ctr > 0.6 & ctr <= 0.8)
+       V(g.list[[i]])[hl4]$hl<-Redpal[2]
+       hl5<-which(ctr > 0.8 & ctr <= 1)
+       V(g.list[[i]])[hl5]$hl<-Redpal[1]
+       vertex.attributes(g.list[[i]])$hl
+       }
+    }
+    if(ctr_type == "betweenness"){
+    require(igraph)
+    for(i in 1:length(g.list)){
+       ctr_max<-which.max(betweenness(g.list[[i]]))
+       ctr<-betweenness(g.list[[i]])/betweenness(g.list[[i]])[ctr_max]
+       Redpal<-heat.colors(5, alpha=1)
+       hl1<-which(ctr > 0 & ctr <= 0.2)
+       V(g.list[[i]])[hl1]$hl<-Redpal[5]
+       hl2<-which(ctr > 0.2 & ctr <= 0.4)
+       V(g.list[[i]])[hl2]$hl<-Redpal[4]
+       hl3<-which(ctr > 0.4 & ctr <= 0.6)
+       V(g.list[[i]])[hl3]$hl<-Redpal[3]
+       hl4<-which(ctr > 0.6 & ctr <= 0.8)
+       V(g.list[[i]])[hl4]$hl<-Redpal[2]
+       hl5<-which(ctr > 0.8 & ctr <= 1)
+       V(g.list[[i]])[hl5]$hl<-Redpal[1]
+       vertex.attributes(g.list[[i]])$hl
+       }
+    }
+    if(ctr_type == "closeness"){
+    require(igraph)
+    for(i in 1:length(g.list)){
+       ctr_max<-which.max(closeness(g.list[[i]]))
+       ctr<-closeness(g.list[[i]])/closeness(g.list[[i]])[ctr_max]
+       Redpal<-heat.colors(5, alpha=1)
+       hl1<-which(ctr > 0 & ctr <= 0.2)
+       V(g.list[[i]])[hl1]$hl<-Redpal[5]
+       hl2<-which(ctr > 0.2 & ctr <= 0.4)
+       V(g.list[[i]])[hl2]$hl<-Redpal[4]
+       hl3<-which(ctr > 0.4 & ctr <= 0.6)
+       V(g.list[[i]])[hl3]$hl<-Redpal[3]
+       hl4<-which(ctr > 0.6 & ctr <= 0.8)
+       V(g.list[[i]])[hl4]$hl<-Redpal[2]
+       hl5<-which(ctr > 0.8 & ctr <= 1)
+       V(g.list[[i]])[hl5]$hl<-Redpal[1]
+       vertex.attributes(g.list[[i]])$hl
+       }
+   }
+   return(g.list)
+}
+```
+Visualización de redes individuales en función del degree.
+```{r}
+g.list_d<-ctr(g.list, ctr_type = "degree")
+plot(g.list_d[[1]], vertex.color = vertex.attributes(g.list_d[[2]])$hl,
+     vertex.size = 15)
+title(main = "Insect")
+plot(g.list_d[[2]], vertex.color = vertex.attributes(g.list_d[[2]])$hl,
+     vertex.size = 15)
+title(main = "Plant")
+```
+Construcción de gráfico de red multiplex 3D para degree.
+```{r}
+hl1<-as.vector(vertex.attributes(g.list_d[[1]])$hl)
+hl2<-as.vector(vertex.attributes(g.list_d[[2]])$hl)
+hl_colors<-c(hl1, hl2)
+Nodes<-length(V(g.list[[1]]))
+Layers<-length(g.list)
+node.colors.matrix <- matrix(hl_colors, Nodes, Layers)
+lay <- layoutMultiplex(g.list_d, layout="fr", ggplot.format=F, box=T)
+plot_multiplex3D(g.list_d, layer.layout=lay,
+                 layer.colors=rainbow(length(g.list_d)),
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
+                 node.size.values="auto", node.size.scale=0.8,
+                 node.colors=node.colors.matrix, edge.colors="#dadada",
+                 show.aggregate=F)
+```
+Construcción de gráfico de red multiplex 3D para betweenness.
+```{r}
+g.list_bt<-ctr(g.list, ctr_type = "betweenness")
+hl1<-as.vector(vertex.attributes(g.list_bt[[1]])$hl)
+hl2<-as.vector(vertex.attributes(g.list_bt[[2]])$hl)
+hl_colors<-c(hl1, hl2)
+node.colors.matrix <- matrix(hl_colors, Nodes, Layers)
+lay <- layoutMultiplex(g.list_bt, layout="fr", ggplot.format=F, box=T)
+plot_multiplex3D(g.list_bt, layer.layout=lay,
+                 layer.colors=rainbow(length(g.list_bt)),
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
+                 node.size.values="auto", node.size.scale=0.8,
+                 node.colors=node.colors.matrix, edge.colors="#dadada",
+                 show.aggregate=F)
+```
+Construcción de gráfico de red multiplex 3D para closeness.
+```{r}
+g.list_cl<-ctr(g.list, ctr_type = "closeness")
+hl1<-as.vector(vertex.attributes(g.list_cl[[1]])$hl)
+hl2<-as.vector(vertex.attributes(g.list_cl[[2]])$hl)
+hl_colors<-c(hl1, hl2)
+node.colors.matrix <- matrix(hl_colors, Nodes, Layers)
+lay <- layoutMultiplex(g.list_cl, layout="fr", ggplot.format=F, box=T)
+plot_multiplex3D(g.list_cl, layer.layout=lay,
+                 layer.colors=rainbow(length(g.list_cl)),
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
+                 node.size.values="auto", node.size.scale=0.8,
+                 node.colors=node.colors.matrix, edge.colors="#dadada",
+                 show.aggregate=F)
 ```
