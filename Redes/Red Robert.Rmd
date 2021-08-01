@@ -6,6 +6,7 @@ output: html_document
 ---
 Se cargan los datos y se extraen los datos de los taxones y los otus almacenados en objeto ps2.
 ```{r}
+library(igraph)
 setwd("C:/Users/LaV_V/Downloads")
 print(load("mis_phyloseq.RData"))
 T_table<-as.data.frame(tax_table(ps2)); dim(T_table)
@@ -62,18 +63,24 @@ Plantmat <- T_Collapsed[Plant,]
 Construímos la red correspondiente a los datos de abundancias del insecto.
 ```{r}
 library(SpiecEasi)
-sparccNet<-sparcc(Insectmat)
-sparccNet <- abs(sparccNet$Cor) >= 0.2
-insect_g<-adj2igraph(sparccNet)
+#sparccNet<-sparcc(Insectmat)
+#sparccNet <- abs(sparccNet$Cor) >= 0.2
+#insect_g<-adj2igraph(sparccNet)
+
+mbNet<-spiec.easi(Insectmat, method = "mb")
+insect_g<-adj2igraph(getRefit(mbNet))
 vertex.attributes(insect_g) <- list(name = colnames(Insectmat))
 plot_network(insect_g)
 ```
 Repetimos el mismo proceso para el caso de la planta.
 ```{r}
 library(SpiecEasi)
-sparccNet<-sparcc(Plantmat)
-sparccNet <- abs(sparccNet$Cor) >= 0.2
-plant_g<-adj2igraph(sparccNet)
+#sparccNet<-sparcc(Plantmat)
+#sparccNet <- abs(sparccNet$Cor) >= 0.2
+#plant_g<-adj2igraph(sparccNet)
+
+mbNet<-spiec.easi(Plantmat, method = "mb")
+plant_g<-adj2igraph(getRefit(mbNet))
 vertex.attributes(plant_g) <- list(name = colnames(Plantmat))
 plot_network(plant_g)
 ```
@@ -149,6 +156,7 @@ TaxGroup<-function(g, T_table, g_tax, p_tax){
   return(g)
 }
 insect_g<-TaxGroup(insect_g, T_table, "Phylum", "Genus")
+plant_g<-TaxGroup(plant_g, T_table, "Phylum", "Genus")
 vertex.attributes(insect_g)$Group[1:12]
 ```
 
