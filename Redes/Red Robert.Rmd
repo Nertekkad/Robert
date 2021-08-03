@@ -63,24 +63,18 @@ Plantmat <- T_Collapsed[Plant,]
 Construímos la red correspondiente a los datos de abundancias del insecto.
 ```{r}
 library(SpiecEasi)
-#sparccNet<-sparcc(Insectmat)
-#sparccNet <- abs(sparccNet$Cor) >= 0.2
-#insect_g<-adj2igraph(sparccNet)
-
-mbNet<-spiec.easi(Insectmat, method = "mb")
-insect_g<-adj2igraph(getRefit(mbNet))
+sparccNet<-sparcc(Insectmat)
+sparccNet <- abs(sparccNet$Cor) >= 0.2
+insect_g<-adj2igraph(sparccNet)
 vertex.attributes(insect_g) <- list(name = colnames(Insectmat))
 plot_network(insect_g)
 ```
 Repetimos el mismo proceso para el caso de la planta.
 ```{r}
 library(SpiecEasi)
-#sparccNet<-sparcc(Plantmat)
-#sparccNet <- abs(sparccNet$Cor) >= 0.2
-#plant_g<-adj2igraph(sparccNet)
-
-mbNet<-spiec.easi(Plantmat, method = "mb")
-plant_g<-adj2igraph(getRefit(mbNet))
+sparccNet<-sparcc(Plantmat)
+sparccNet <- abs(sparccNet$Cor) >= 0.2
+plant_g<-adj2igraph(sparccNet)
 vertex.attributes(plant_g) <- list(name = colnames(Plantmat))
 plot_network(plant_g)
 ```
@@ -112,35 +106,44 @@ plant_g<-v_colored(plant_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                    g_colors = colors)
 plot(insect_g, vertex.color=vertex.attributes(insect_g)$color,
      vertex.size = 15)
-legend(x=-2.7, y=-0.3, unq, title = "Insect", pch=21, pt.bg=colors, pt.cex=2, cex=.8,
-       bty="n", ncol=1)
+legend(x=-2.7, y=-0.3, unq, title = "Insect", pch=21, pt.bg=colors, pt.cex=2, cex=.8, bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
 #legend(x=-2, y=0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
 #       bty="n", ncol=1)
 plot(plant_g, vertex.color=vertex.attributes(plant_g)$color,
      vertex.size = 10)
-legend(x=-2.7, y=-0.3, unq, title = "Plant", pch=21, pt.bg=colors, pt.cex=2, cex=.8,
-       bty="n", ncol=1)
+legend(x=-2.7, y=-0.3, unq, title = "Plant", pch=21, pt.bg=colors, pt.cex=2, cex=.8, bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
 #legend(x=-2, y=0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
 #       bty="n", ncol=1)
 ```
-Construímos el gráfico 3D de una red multicapa multiplex con el paquete muxViz.
+Generamos un objeto muxViz como una lista de redes igraph, y se construye una matriz de abundancias.
 ```{r}
 library(muxViz)
-g.list<-list(insect_g, plant_g); g.list
+g.list<-list(insect_g, plant_g)
+insect_ab<-colSums(Insectmat)
+insect_ab<-as.numeric((insect_ab)/insect_ab[which.max(insect_ab)])
+plant_ab<-colSums(Plantmat)
+plant_ab<-as.numeric((plant_ab)/plant_ab[which.max(plant_ab)])
+abundances<-c(insect_ab, plant_ab)
+Nodes<-length(V(insect_g))
+Layers<-length(g.list)
+node.ab.matrix <- matrix((abundances+1)*10, Nodes, Layers)
+```
+Construímos el gráfico 3D de una red multicapa multiplex con el paquete muxViz.
+```{r}
 lay <- layoutMultiplex(g.list, layout="fr", ggplot.format=F, box=T)
 plot_multiplex3D(g.list, layer.layout=lay,
                  layer.colors=rainbow(length(g.list)),
                  layer.shift.x=0.5, layer.space=2,
                  layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
-                 node.size.values="auto", node.size.scale=0.6,
+                 node.size.values=node.ab.matrix, node.size.scale=0.6,
                  node.colors=vertex.attributes(insect_g)$color,
                  edge.colors="white",
                  node.colors.aggr=vertex.attributes(insect_g)$color,
-                 show.aggregate=T)
+                 show.aggregate=F)
 ```
 Esta función nos permite clasificar los nodos en categorías taxonómicas superiores, es decir, que si los nodos representan géneros o familias, esta función permite clasificarlos a niveles superiores tales como Phylum.
 ```{r}
@@ -159,8 +162,7 @@ insect_g<-TaxGroup(insect_g, T_table, "Phylum", "Genus")
 plant_g<-TaxGroup(plant_g, T_table, "Phylum", "Genus")
 vertex.attributes(insect_g)$Group[1:12]
 ```
-
-
+Construimos una función que nos permite colorear los nodos en función de su centralidad. El objeto ctr_type puede corresponder a "degree", "betweenness" y "closeness".
 ```{r}
 ctr<-function(g.list, ctr_type){
   if(ctr_type == "degree"){
@@ -279,6 +281,47 @@ plot_multiplex3D(g.list_cl, layer.layout=lay,
                  layer.shift.x=0.5, layer.space=2,
                  layer.labels=c("Insect", "Plant"), layer.labels.cex=1.5,
                  node.size.values="auto", node.size.scale=0.8,
+                 node.colors=node.colors.matrix, edge.colors="#dadada",
+                 show.aggregate=F)
+```
+Generamos redes agregadas para cada tipo de centralidad y las introducimos como un objeto muxViz. Generamos una matriz de colores correspondiente a tres tipos distintos de centralidades: degree, betweenness y closeness.
+```{r}
+net_d<-GetAggregateNetworkFromNetworkList(g.list_d)
+net_bt<-GetAggregateNetworkFromNetworkList(g.list_bt)
+net_cl<-GetAggregateNetworkFromNetworkList(g.list_cl)
+central_muxlist<-list(net_d, net_bt, net_cl)
+
+d<-ctr(central_muxlist, ctr_type = "degree")
+hl_d<-as.vector(vertex.attributes(d[[1]])$hl)
+bt<-ctr(central_muxlist, ctr_type = "betweenness")
+hl_bt<-as.vector(vertex.attributes(bt[[2]])$hl)
+cl<-ctr(central_muxlist, ctr_type = "closeness")
+hl_cl<-as.vector(vertex.attributes(cl[[3]])$hl)
+
+hl_colors2<-c(hl_d, hl_bt, hl_cl)
+Nodes<-length(V(central_muxlist[[1]]))
+Layers<-length(central_muxlist)
+node.colors.matrix <- matrix(hl_colors2, Nodes, Layers)
+```
+Se genera una matriz de abundancias.
+```{r}
+collapsed_ab<-colSums(T_Collapsed)
+collapsed_ab<-as.numeric(collapsed_ab/collapsed_ab[which.max(collapsed_ab)])
+collapsed_ab<-c(collapsed_ab, collapsed_ab, collapsed_ab)
+Nodes<-length(V(central_muxlist[[1]]))
+Layers<-length(central_muxlist)
+node.ab.matrix <- matrix((collapsed_ab+1)*10, Nodes, Layers)
+```
+Construímos un gráfico 3D representando los tres tipos de centralidad en un gradiente de color y el tamaño de los nodos en función de las abundancias.
+```{r}
+
+lay <- layoutMultiplex(central_muxlist, layout="fr", ggplot.format=F, box=T)
+plot_multiplex3D(central_muxlist, layer.layout=lay,
+                 layer.colors=rainbow(length(central_muxlist)),
+                 layer.shift.x=0.5, layer.space=2,
+                 layer.labels=c("Degree", "Betweenness", "Closeness"),    
+                 layer.labels.cex=1.5,
+                 node.size.values=node.ab.matrix, node.size.scale=0.8,
                  node.colors=node.colors.matrix, edge.colors="#dadada",
                  show.aggregate=F)
 ```
