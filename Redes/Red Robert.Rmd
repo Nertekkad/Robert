@@ -2,18 +2,21 @@
 title: "muxViz multigraph"
 author: "Víctor LV"
 date: "25/7/2021"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 Se cargan los datos y se extraen los datos de los taxones y los otus almacenados en objeto ps2.
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, writing=FALSE}
 library(igraph)
+library(phyloseq)
 setwd("C:/Users/LaV_V/Downloads")
 print(load("mis_phyloseq.RData"))
 T_table<-as.data.frame(tax_table(ps2)); dim(T_table)
 O_table<-as.data.frame(t(otu_table(ps2))); dim(O_table)
 ```
 Se carga la función T_Collapse
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, writing=FALSE}
 #source("me falta guardarlo en un documento aparte")
 T_collapse<-function(T_table, O_table, names_level){
   #Identifica los taxones y genera una matriz de columnas vacías
@@ -29,24 +32,24 @@ T_collapse<-function(T_table, O_table, names_level){
   colnames(mat)<-unq
   #La matriz se transforma a valores relativos de las muestras
   #mat<-mat/rowSums(mat)
-  return(print(mat))
+  return(mat)
 }
 ```
 Se ingresa primero la tabla de tacones, luego la tabla de otus y finalmente el nivel taxonómico al cual se desea sintetizar la tabla.
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, writing=FALSE}
 T_Collapsed<-T_collapse(T_table = T_table, O_table = O_table,
                         names_level = "Genus")
 dim(T_Collapsed)
 ```
 Se identifican los elementos no clasificados para ser eliminados.
 ```{r}
-colnames(T_Collapsed)
+colnames(T_Collapsed)[1:10]
 T_Collapsed<-T_Collapsed[, -c(which(colnames(T_Collapsed) == "unclassified"))]
                  #Activar en caso de trabajar a nivel de "Family"
                  #which(colnames(T_Collapsed) == "JG30-KF-CM45"),
                  #which(colnames(T_Collapsed) == "67-14"),
                  #which(colnames(T_Collapsed) == "AKIW781"))]
-colnames(T_Collapsed)
+colnames(T_Collapsed)[1:10]
 ```
 Se identifican los elementos pertenecientes a la planta y al insecto.
 ```{r}
@@ -64,7 +67,7 @@ Construímos la red correspondiente a los datos de abundancias del insecto.
 ```{r}
 library(SpiecEasi)
 sparccNet<-sparcc(Insectmat)
-sparccNet <- abs(sparccNet$Cor) >= 0.2
+sparccNet <- abs(sparccNet$Cor) >= 0.4
 insect_g<-adj2igraph(sparccNet)
 vertex.attributes(insect_g) <- list(name = colnames(Insectmat))
 plot_network(insect_g)
@@ -73,7 +76,7 @@ Repetimos el mismo proceso para el caso de la planta.
 ```{r}
 library(SpiecEasi)
 sparccNet<-sparcc(Plantmat)
-sparccNet <- abs(sparccNet$Cor) >= 0.2
+sparccNet <- abs(sparccNet$Cor) >= 0.4
 plant_g<-adj2igraph(sparccNet)
 vertex.attributes(plant_g) <- list(name = colnames(Plantmat))
 plot_network(plant_g)
@@ -133,7 +136,7 @@ Layers<-length(g.list)
 node.ab.matrix <- matrix((abundances+1)*10, Nodes, Layers)
 ```
 Construímos el gráfico 3D de una red multicapa multiplex con el paquete muxViz.
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
 lay <- layoutMultiplex(g.list, layout="fr", ggplot.format=F, box=T)
 plot_multiplex3D(g.list, layer.layout=lay,
                  layer.colors=rainbow(length(g.list)),
@@ -143,7 +146,7 @@ plot_multiplex3D(g.list, layer.layout=lay,
                  node.colors=vertex.attributes(insect_g)$color,
                  edge.colors="white",
                  node.colors.aggr=vertex.attributes(insect_g)$color,
-                 show.aggregate=F)
+                 show.aggregate=T)
 ```
 Esta función nos permite clasificar los nodos en categorías taxonómicas superiores, es decir, que si los nodos representan géneros o familias, esta función permite clasificarlos a niveles superiores tales como Phylum.
 ```{r}
@@ -269,7 +272,7 @@ plot_multiplex3D(g.list_bt, layer.layout=lay,
                  show.aggregate=F)
 ```
 Construcción de gráfico de red multiplex 3D para closeness.
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, writing=FALSE}
 g.list_cl<-ctr(g.list, ctr_type = "closeness")
 hl1<-as.vector(vertex.attributes(g.list_cl[[1]])$hl)
 hl2<-as.vector(vertex.attributes(g.list_cl[[2]])$hl)
@@ -313,7 +316,7 @@ Layers<-length(central_muxlist)
 node.ab.matrix <- matrix((collapsed_ab+1)*10, Nodes, Layers)
 ```
 Construímos un gráfico 3D representando los tres tipos de centralidad en un gradiente de color y el tamaño de los nodos en función de las abundancias.
-```{r}
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, writing=FALSE}
 
 lay <- layoutMultiplex(central_muxlist, layout="fr", ggplot.format=F, box=T)
 plot_multiplex3D(central_muxlist, layer.layout=lay,
@@ -325,3 +328,69 @@ plot_multiplex3D(central_muxlist, layer.layout=lay,
                  node.colors=node.colors.matrix, edge.colors="#dadada",
                  show.aggregate=F)
 ```
+Identificamos el phylum de aquellos nodos con mayor grado de centralidad.
+```{r}
+Redpal<-heat.colors(5, alpha=1)
+by_degree<-which(vertex.attributes(d[[1]])$hl == Redpal[1])
+vertex.attributes(insect_g)$Group[by_degree]
+by_betweenness<-which(vertex.attributes(bt[[1]])$hl == Redpal[1])
+vertex.attributes(insect_g)$Group[by_betweenness]
+by_closeness<-which(vertex.attributes(cl[[1]])$hl == Redpal[1])
+vertex.attributes(insect_g)$Group[by_closeness]
+```
+Posteriormente generamos un diagrama de cuerda para poder visualizar la
+distribución de los phyla a lo largo de las muestras, para lo cual requeriremos
+el paquete circlize. Para ello empleamos nuevamente la función T_Collapse() y la
+programamos para obtener un data.frame a nivel de phylum. Posteriormente
+buscamos los identificadores de las muestras y sumamos las abundancias de cada
+uno de los phylum dentro de las muestras.
+```{r eval = FALSE}
+library(circlize)
+#Identificadores de las muestras.
+samples<-unique(sample_data(ps2)$Samples)
+#Generación de tabla de abundancias a nivel de phylum.
+phylum_table<-T_collapse(T_table, O_table, "Phylum"); dim(phylum_table)
+#Se genera un data.frame que contiene la suma de las abundancias de los phyla
+#en cada una de las muestras.
+data_frs<-list()
+for(i in 1:length(samples)){
+  s_data<-which(sample_data(ps2)$Samples == samples[i]); s_data
+  bacter_names<-colnames(phylum_table[s_data,])
+  ab_sums<-colSums(phylum_table[s_data,])
+  data_frs[[i]]<-data.frame("ID"=samples[i],"Taxa"=bacter_names, "Sums"=ab_sums)
+}
+length(samples)
+chord_df<-rbind.data.frame(data_frs[[1]], data_frs[[2]], data_frs[[3]],
+                 data_frs[[4]], data_frs[[5]], data_frs[[6]])
+#Se eliminan las filas donde la abundancia sea nula.
+chord_df<-chord_df[-which(chord_df$Sums == 0),]
+```
+Generación del diagrama de cuerda. En la imagen podemos apresiar el peso que el
+phylum Proteobacteria tiene en las muestras, pues se muestra como preponderante
+en todas las muestras.
+La función circos.trackPlotRegion() modificada, se tomó de:
+https://bioinfo4all.wordpress.com/2021/03/13/tutorial-7-how-to-do-chord-diagram-using-r/
+```{r eval = False}
+#Se genera un chord_diagram con las leyendas suprimidas.
+chordDiagram(chord_df, annotationTrack = "grid", preAllocateTracks = 1)
+#Para evitar que los nombres se amontonen, se carga la función
+#circos.trackPlotRegion() modificada, misma que gira los nombres 90°.
+circos.trackPlotRegion(track.index = 2, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  
+  #print labels 
+  circos.text(mean(xlim), ylim[1] + 2.5, sector.name, 
+              facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5), cex=0.6)
+  
+  #print axis
+  circos.axis(h = "top", labels.cex = 0.5, major.tick.percentage = 0.2, 
+              sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+stop()
+circos.trackPlotRegion(chord_df)
+```
+
+
+
