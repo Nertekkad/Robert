@@ -329,8 +329,14 @@ plot_multiplex3D(central_muxlist, layer.layout=lay,
                  show.aggregate=F)
 ```
 Identificamos el phylum de aquellos nodos con mayor grado de centralidad.
+Como se puede observar, la presencia de Proteobacteria es preponderante en
+nodos con centralidad alta.
 ```{r}
+#Se carga la paleta de colores que se empleó previamente en los gráficos de
+#redes con valores de centralidad anexos.
 Redpal<-heat.colors(5, alpha=1)
+#Se localizan los nodos con mayor centralidad, correspondientes al rojo intenso
+#de los gráficos previos, y se asocian al phylum al que pertenecen.
 by_degree<-which(vertex.attributes(d[[1]])$hl == Redpal[1])
 vertex.attributes(insect_g)$Group[by_degree]
 by_betweenness<-which(vertex.attributes(bt[[1]])$hl == Redpal[1])
@@ -367,7 +373,9 @@ chord_df<-chord_df[-which(chord_df$Sums == 0),]
 ```
 Generación del diagrama de cuerda. En la imagen podemos apresiar el peso que el
 phylum Proteobacteria tiene en las muestras, pues se muestra como preponderante
-en todas las muestras.
+en todas las muestras. Las muestras de F. epiphytes y huevos son las más diversas,
+al contener, aunque en menor medida, otros phyla dentro de los que destacan
+Actinobacteria y Bacteroidetes.
 La función circos.trackPlotRegion() modificada, se tomó de:
 https://bioinfo4all.wordpress.com/2021/03/13/tutorial-7-how-to-do-chord-diagram-using-r/
 ```{r eval = False}
@@ -388,9 +396,56 @@ circos.trackPlotRegion(track.index = 2, panel.fun = function(x, y) {
   circos.axis(h = "top", labels.cex = 0.5, major.tick.percentage = 0.2, 
               sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
-stop()
 circos.trackPlotRegion(chord_df)
 ```
-
+Para identificar aquellos nodos que cambian entre capas y diferenciarlos de aquellos
+que permanecen sin diferencias significativas, construimos una función que aplique
+un t-test a cada par de nodos réplica en una red bipartita. Para efectos prácticos,
+solo se consideraron los nodos más abundantes, pues el bajo número de muestra de las
+menos abundantes, compromete la fiabilidad del t-test.
+```{r}
+diff_nodes_graph<-function(T_Collapsed, n, mat_list, g.list, alpha){
+  #Las listas solo deben contener dos elementos cada una.
+  if(length(mat_list)>2 | length(g.list)>2){
+    print("El input es una red bipartita")
+  } else if(length(mat_list)==2 & length(g.list)==2){
+    #Se consideran solo los "n" nodos más abundantes.
+    most_ab<-sort(apply(t(T_Collapsed), 1, sum),
+                  decreasing = T, index.return = F)[1:n]
+    #Se aislan las abundancias de los nodos seleccionados.
+    most_layer<-list()
+    for(i in 1:length(mat_list)){
+      most_layer[[i]]<-mat_list[[i]][, names(most_ab)]
+    }
+    #Se fusionan las capas.
+    aggregated_g<-GetAggregateNetworkFromNetworkList(g.list)
+    #Se realiza el t-test.
+    alpha<-alpha
+    for(i in 1:length(most_ab)){
+      if(t.test(most_layer[[1]][,i], most_layer[[2]][,i])$p.value<=alpha){
+        V(aggregated_g)[names(most_ab[i])]$colorA<-"red"
+      } else if(t.test(most_layer[[1]][,i], most_layer[[2]][,i])$p.value>alpha){
+        V(aggregated_g)[names(most_ab[i])]$colorA<-"blue"
+      }
+    }
+    return(aggregated_g)
+  }
+}
+```
+Posteriormente introducimos la tabla de abundancias totales (T_Collapsed), el número
+de nodos que queremos considerar, y las listas de las matrices y las capas de la red,
+además del valor de alpha para la prueba de t. Debido a que la función trabaja con
+redes bipartitas, las listas solo deben contener dos elementos cada una. La red
+resultante es una fusión de las capas de la red bipartita.
+```{r}
+mat_list<-list(Insectmat, Plantmat)
+g.list<-list(insect_g, plant_g)
+#Consideramos solo los 20 nodos más importantes y una alpha de 0.1.
+diff_g<-diff_nodes_graph(T_Collapsed, n = 20, mat_list, g.list, alpha = 0.1)
+#En el grafo resultante, aquellos nodos que cambian están representados con rojo
+#y aquellos sin diferencias significativas en azul.
+plot(diff_g, vertex.label.color="black", vertex.color = vertex.attributes(diff_g)$colorA,
+     vertex.label.cex=.5, vertex.label.dist=1,layout=layout_with_kk, vertex.size = 5)
+```
 
 
