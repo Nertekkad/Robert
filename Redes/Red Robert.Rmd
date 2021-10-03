@@ -107,15 +107,17 @@ insect_g<-v_colored(insect_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                     g_colors = colors)
 plant_g<-v_colored(plant_g, T_table, g_tax = "Phylum", p_tax = "Genus",
                    g_colors = colors)
-plot(insect_g, vertex.color=vertex.attributes(insect_g)$color,
-     vertex.size = 15)
+plot(insect_g, vertex.label.color="black",
+     vertex.color = vertex.attributes(insect_g)$color, vertex.label.cex=.5,
+     vertex.label.dist=1,layout=layout_with_kk, vertex.size = 5)
 legend(x=-2.7, y=-0.3, unq, title = "Insect", pch=21, pt.bg=colors, pt.cex=2, cex=.8, bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
 #legend(x=-2, y=0.3, unq, pch=21, pt.bg=colors, pt.cex=2, cex=.8,
 #       bty="n", ncol=1)
-plot(plant_g, vertex.color=vertex.attributes(plant_g)$color,
-     vertex.size = 10)
+plot(plant_g, vertex.label.color="black",
+     vertex.color = vertex.attributes(plant_g)$color, vertex.label.cex=.5,
+     vertex.label.dist=1,layout=layout_with_kk, vertex.size = 5)
 legend(x=-2.7, y=-0.3, unq, title = "Plant", pch=21, pt.bg=colors, pt.cex=2, cex=.8, bty="n", ncol=1)
 #Aplicar este código e inactivar el anterior solo cuando se deseé visualizar
 #el gráfico en Zoom,
@@ -231,11 +233,14 @@ ctr<-function(g.list, ctr_type){
 Visualización de redes individuales en función del degree.
 ```{r}
 g.list_d<-ctr(g.list, ctr_type = "degree")
-plot(g.list_d[[1]], vertex.color = vertex.attributes(g.list_d[[2]])$hl,
-     vertex.size = 15)
+plot(g.list_d[[1]], vertex.label.color="black",
+     vertex.color = vertex.attributes(g.list_d[[1]])$hl, vertex.label.cex=.5,
+     vertex.label.dist=1,layout=layout_with_kk, vertex.size = 5)
 title(main = "Insect")
-plot(g.list_d[[2]], vertex.color = vertex.attributes(g.list_d[[2]])$hl,
-     vertex.size = 15)
+
+plot(g.list_d[[2]], vertex.label.color="black",
+     vertex.color = vertex.attributes(g.list_d[[2]])$hl, vertex.label.cex=.5,
+     vertex.label.dist=1,layout=layout_with_kk, vertex.size = 5)
 title(main = "Plant")
 ```
 Construcción de gráfico de red multiplex 3D para degree.
